@@ -13,9 +13,6 @@ except:
         import yaml
         loader = yaml.FullLoader
 
-n_span = 100
-n_xy   = 200
-
 def load_yaml(fname_input):
     with open(fname_input, 'r') as f:
         input_yaml = yaml.load(f, Loader=loader)
@@ -27,9 +24,18 @@ def myinterp(xi, x, f):
     myspline = spline(x, f)
     return myspline(xi)
 
-def generate_lofted(outer_shape, airfoils):
+def generate_lofted(outer_shape, airfoils, n_span_min=100, n_xy=400):
+    # Use yaml grid points and others that we add
+    r_span = np.unique( np.r_[np.linspace(0.0, 1.0, n_span_min),
+                              outer_shape['chord']['grid'],
+                              outer_shape['twist']['grid'],
+                              outer_shape['pitch_axis']['grid'],
+                              outer_shape['reference_axis']['x']['grid'],
+                              outer_shape['reference_axis']['y']['grid'],
+                              outer_shape['reference_axis']['z']['grid'] ])
+    n_span = len(r_span)
+    
     # Read in blade spanwise geometry values and put on common grid
-    r_span     = np.linspace(0.0, 1.0, n_span)
     chord      = myinterp(r_span, outer_shape['chord']['grid'], outer_shape['chord']['values'])
     twist      = myinterp(r_span, outer_shape['twist']['grid'], outer_shape['twist']['values'])
     pitch_axis = myinterp(r_span, outer_shape['pitch_axis']['grid'], outer_shape['pitch_axis']['values'])
@@ -156,6 +162,7 @@ def write_openscad(lofted_shape):
     ax = fig.add_subplot(111, projection='3d')
     #ax.set_aspect('equal')
 
+    n_span = lofted_shape.shape[0]
     for k in range(n_span):
         # Create polygon / polyhedron of the airfoil shape in lofted_shape[k,:,:].
         # Use the hull(){} command to connect them
@@ -168,7 +175,7 @@ def write_openscad(lofted_shape):
 
 
 if __name__ == '__main__':
-    fname = 'IEA-15-240-RWT.yaml'
+    fname = 'IEA-15-240-RWT_FineGrid.yaml'
     outer_shape, airfoils = load_yaml(fname)
     lofted3d = generate_lofted(outer_shape, airfoils)
     write_openscad(lofted3d)
