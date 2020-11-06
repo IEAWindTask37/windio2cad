@@ -222,7 +222,9 @@ def write_openscad(lofted_shape):
         points_in_bottom = list(range(len(points_lower)))
         points_in_top = list(np.array(points_in_bottom) + len(points_lower))
         polygons.append(
-            ops.Polyhedron(points=all_points, faces=[points_in_bottom, points_in_top]).translate([0, 0, lofted_shape[k, 0, 2]])
+            ops.Polyhedron(
+                points=all_points, faces=[points_in_bottom, points_in_top]
+            ).translate([0, 0, lofted_shape[k, 0, 2]])
         )
 
         # Graph version
