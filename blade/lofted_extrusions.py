@@ -3,6 +3,9 @@ import numpy as np
 from scipy.interpolate import PchipInterpolator as spline
 import geometry_tools as geom
 import openpyscad as ops
+import argparse
+import os
+import subprocess
 
 try:
     import ruamel_yaml as yaml
@@ -198,7 +201,7 @@ def set_axes_equal(ax):
     ax.set_zlim3d([z_middle - plot_radius, z_middle + plot_radius])
 
 
-def write_openscad(lofted_shape):
+def write_openscad(lofted_shape, output_scad_filename):
     fig = plt.figure()
     ax = fig.add_subplot(111, projection="3d")
     # ax.set_aspect('equal')
@@ -226,11 +229,49 @@ def write_openscad(lofted_shape):
     plt.show()
 
     hull_of_extrusions = extrusions.hull()
-    hull_of_extrusions.write("foo.scad")
+    hull_of_extrusions.write(output_scad_filename)
 
 
 if __name__ == "__main__":
-    fname = "IEA-15-240-RWT_FineGrid.yaml"
-    outer_shape, airfoils = load_yaml(fname)
+    parser = argparse.ArgumentParser(description="Create an .stl file from blade geometry")
+    parser.add_argument("--input", help="YAML file with blade geometry.", required=True)
+    parser.add_argument("--output", help=".stl output filename", required=True)
+    parser.add_argument("--downsample", help="Downsample spanwise z-axis to every nth sample (i.e., 10 means every tenth cross section.) Defaults to 1, which can be very slow.", default=1)
+    parser.add_argument("--openscad", help="Path to OpenSCAD, defaults to macOS install location", default="/Applications/OpenSCAD.app/Contents/MacOS/OpenSCAD")
+    args = parser.parse_args()
+
+    input_yaml = args.input
+    output_stl = args.output
+    downsample = args.downsample
+    openscad = args.openscad
+    output_scad_filename = "intermediate.scad"
+
+    print("========== Lofted Extrusion ==========")
+
+    if not os.access(openscad, os.X_OK):
+        raise Exception(f"{openscad} is not a valid path to OpenSCAD.")
+
+    if not os.path.isfile(input_yaml):
+        raise Exception(f"{input_yaml} not found")
+
+    if os.path.isfile(output_stl):
+        raise Exception(f"{output_stl} already exists. Please specify a new filename")
+
+    print(f"Input filename: {input_yaml}")
+    print(f"Output filename: {output_stl}")
+    print(f"Path to OpenSCAD \"{openscad}\"")
+    print(f"Will write intermediate OpenSCAD data to {output_scad_filename} and delete the file when done.")
+
+    print("Creating OpenSCAD file from YAML...")
+    outer_shape, airfoils = load_yaml(input_yaml)
     lofted3d = generate_lofted(outer_shape, airfoils)
-    write_openscad(lofted3d)
+    write_openscad(lofted3d, output_scad_filename)
+    print("Rendering OpenSCAD (this could take a while)...")
+    subprocess.run([args.openscad, "-o", args.output, output_scad_filename])
+    os.remove(output_scad_filename)
+    print("Done!")
+
+    # fname = "IEA-15-240-RWT_FineGrid.yaml"
+    # outer_shape, airfoils = load_yaml(fname)
+    # lofted3d = generate_lofted(outer_shape, airfoils)
+    # write_openscad(lofted3d)
