@@ -13,6 +13,10 @@ setup(
     author_email     = 'systems.engineering@nrel.gov',
     install_requires = [
         'pyyaml',
+        'scipy',
+        'matplotlib',
+        'numpy',
+        'ruamel_yaml',
     ],
     python_requires  = '>=3.8',
     packages         = find_packages(exclude=['docs', 'tests', 'ext']),

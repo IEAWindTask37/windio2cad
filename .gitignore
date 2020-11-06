@@ -133,3 +133,7 @@ dmypy.json
 
 # macOS junk
 .DS_Store
+
+# Intermediate OpenSCAD and .stl files
+*.stl
+*.scad
