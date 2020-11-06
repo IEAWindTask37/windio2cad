@@ -201,7 +201,7 @@ def set_axes_equal(ax):
     ax.set_zlim3d([z_middle - plot_radius, z_middle + plot_radius])
 
 
-def write_openscad(lofted_shape, output_scad_filename):
+def write_openscad(lofted_shape, output_scad_filename, downsample_z):
     fig = plt.figure()
     ax = fig.add_subplot(111, projection="3d")
     # ax.set_aspect('equal')
@@ -210,7 +210,12 @@ def write_openscad(lofted_shape, output_scad_filename):
     extrusions = ops.Union()
     z_height = float(lofted_shape[-1, 0, 2] - lofted_shape[0, 0, 2]) / float(n_span)
 
-    for k in range(0, n_span):
+    if downsample_z == 1:
+        n_span_range = range(n_span)
+    else:
+        n_span_range = range(0, n_span, downsample_z)
+
+    for k in n_span_range:
         bottom = lofted_shape[k, 0, 2]
         points = [[row[0], row[1]] for row in lofted_shape[k, :, :]]
         extruded_section = (
@@ -220,29 +225,44 @@ def write_openscad(lofted_shape, output_scad_filename):
         )
         extrusions.append(extruded_section)
 
-        # Graph version
-        ax.plot(
-            lofted_shape[k, :, 0], lofted_shape[k, :, 1], lofted_shape[k, :, 2], "b"
-        )
+        # Uncomment to enable a matplotlib plot of the blade
+        # Note: This will require the user to exit the matplotlib viewer
+        # to complete the command line process. In the future, perhaps
+        # this should be a command line option.
 
-    set_axes_equal(ax)
-    plt.show()
+        # Graph version
+        # ax.plot(
+        #     lofted_shape[k, :, 0], lofted_shape[k, :, 1], lofted_shape[k, :, 2], "b"
+        # )
+
+    # set_axes_equal(ax)
+    # plt.show()
 
     hull_of_extrusions = extrusions.hull()
     hull_of_extrusions.write(output_scad_filename)
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Create an .stl file from blade geometry")
+    parser = argparse.ArgumentParser(
+        description="Create an .stl file from blade geometry"
+    )
     parser.add_argument("--input", help="YAML file with blade geometry.", required=True)
     parser.add_argument("--output", help=".stl output filename", required=True)
-    parser.add_argument("--downsample", help="Downsample spanwise z-axis to every nth sample (i.e., 10 means every tenth cross section.) Defaults to 1, which can be very slow.", default=1)
-    parser.add_argument("--openscad", help="Path to OpenSCAD, defaults to macOS install location", default="/Applications/OpenSCAD.app/Contents/MacOS/OpenSCAD")
+    parser.add_argument(
+        "--downsample",
+        help="Downsample spanwise z-axis to every nth sample (i.e., 10 means every tenth cross section.) Defaults to 1, which can be very slow.",
+        default=1,
+    )
+    parser.add_argument(
+        "--openscad",
+        help="Path to OpenSCAD, defaults to macOS install location",
+        default="/Applications/OpenSCAD.app/Contents/MacOS/OpenSCAD",
+    )
     args = parser.parse_args()
 
     input_yaml = args.input
     output_stl = args.output
-    downsample = args.downsample
+    downsample = int(args.downsample)
     openscad = args.openscad
     output_scad_filename = "intermediate.scad"
 
@@ -259,13 +279,16 @@ if __name__ == "__main__":
 
     print(f"Input filename: {input_yaml}")
     print(f"Output filename: {output_stl}")
-    print(f"Path to OpenSCAD \"{openscad}\"")
-    print(f"Will write intermediate OpenSCAD data to {output_scad_filename} and delete the file when done.")
+    print(f'Path to OpenSCAD "{openscad}"')
+    print(f"Downsample {downsample}")
+    print(
+        f"Will write intermediate OpenSCAD data to {output_scad_filename} and delete the file when done."
+    )
 
     print("Creating OpenSCAD file from YAML...")
     outer_shape, airfoils = load_yaml(input_yaml)
     lofted3d = generate_lofted(outer_shape, airfoils)
-    write_openscad(lofted3d, output_scad_filename)
+    write_openscad(lofted3d, output_scad_filename, downsample)
     print("Rendering OpenSCAD (this could take a while)...")
     subprocess.run([args.openscad, "-o", args.output, output_scad_filename])
     os.remove(output_scad_filename)
