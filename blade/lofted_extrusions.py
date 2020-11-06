@@ -207,7 +207,7 @@ def write_openscad(lofted_shape):
     extrusions = ops.Union()
     z_height = float(lofted_shape[-1, 0, 2] - lofted_shape[0, 0, 2]) / float(n_span)
 
-    for k in range(0, n_span, 10):
+    for k in range(0, n_span):
         bottom = lofted_shape[k, 0, 2]
         points = [[row[0], row[1]] for row in lofted_shape[k, :, :]]
         extruded_section = (
