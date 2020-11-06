@@ -204,12 +204,10 @@ def write_openscad(lofted_shape):
     # ax.set_aspect('equal')
 
     n_span = lofted_shape.shape[0]
-
     extrusions = ops.Union()
-
     z_height = float(lofted_shape[-1, 0, 2] - lofted_shape[0, 0, 2]) / float(n_span)
 
-    for k in range(0, n_span, 5):
+    for k in range(0, n_span, 10):
         bottom = lofted_shape[k, 0, 2]
         points = [[row[0], row[1]] for row in lofted_shape[k, :, :]]
         extruded_section = (
@@ -227,7 +225,8 @@ def write_openscad(lofted_shape):
     set_axes_equal(ax)
     plt.show()
 
-    extrusions.write("foo.scad")
+    hull_of_extrusions = extrusions.hull()
+    hull_of_extrusions.write("foo.scad")
 
 
 if __name__ == "__main__":
