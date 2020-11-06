@@ -207,28 +207,23 @@ def write_openscad(lofted_shape):
 
     extrusions = ops.Union()
 
-    for i in range(n_span - 1):
-        j = i + 1
-        bottom = lofted_shape[i, 0, 2]
-        top = lofted_shape[j, 0, 2]
-        z_height = top - bottom
+    for k in range(n_span):
+        bottom = lofted_shape[k, 0, 2]
 
-        # Create polygon / polyhedron of the airfoil shape in lofted_shape[k,:,:].
-        # Use the hull(){} command to connect them
-
-        points = [[row[0], row[1]] for row in lofted_shape[i, :, :]]
-        extruded_section = ops.Polygon(points=points).linear_extrude(height=z_height).translate([0, 0, bottom])
+        points = [[row[0], row[1]] for row in lofted_shape[k, :, :]]
+        extruded_section = ops.Polygon(points=points).linear_extrude(height=1e-4).translate([0, 0, bottom])
         extrusions.append(extruded_section)
 
         # Graph version
-        # ax.plot(
-        #     lofted_shape[k, :, 0], lofted_shape[k, :, 1], lofted_shape[k, :, 2], "b"
-        # )
+        ax.plot(
+            lofted_shape[k, :, 0], lofted_shape[k, :, 1], lofted_shape[k, :, 2], "b"
+        )
 
     set_axes_equal(ax)
     plt.show()
 
-    extrusions.write("foo.scad")
+    hull = extrusions.hull()
+    hull.write("foo.scad")
 
 
 if __name__ == "__main__":
