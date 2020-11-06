@@ -208,7 +208,11 @@ def write_openscad(lofted_shape, output_scad_filename, downsample_z):
 
     n_span = lofted_shape.shape[0]
     extrusions = ops.Union()
-    z_height = float(lofted_shape[-1, 0, 2] - lofted_shape[0, 0, 2]) / float(n_span)
+
+    diff_z = []
+    for k in range(n_span - 1):
+        diff_z.append(lofted_shape[k + 1, 0, 2] - lofted_shape[k, 0, 2])
+    dz = 0.1 * min(diff_z)
 
     if downsample_z == 1:
         n_span_range = range(n_span)
@@ -220,7 +224,7 @@ def write_openscad(lofted_shape, output_scad_filename, downsample_z):
         points = [[row[0], row[1]] for row in lofted_shape[k, :, :]]
         extruded_section = (
             ops.Polygon(points=points)
-            .linear_extrude(height=z_height)
+            .linear_extrude(height=dz)
             .translate([0, 0, bottom])
         )
         extrusions.append(extruded_section)
