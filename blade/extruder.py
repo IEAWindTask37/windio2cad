@@ -207,11 +207,12 @@ def write_openscad(lofted_shape):
 
     extrusions = ops.Union()
 
+    z_height = float(lofted_shape[-1, 0, 2] - lofted_shape[0, 0, 2]) / float(n_span)
+
     for k in range(n_span):
         bottom = lofted_shape[k, 0, 2]
-
         points = [[row[0], row[1]] for row in lofted_shape[k, :, :]]
-        extruded_section = ops.Polygon(points=points).linear_extrude(height=1e-4).translate([0, 0, bottom])
+        extruded_section = ops.Polygon(points=points).linear_extrude(height=z_height).translate([0, 0, bottom])
         extrusions.append(extruded_section)
 
         # Graph version
@@ -222,8 +223,7 @@ def write_openscad(lofted_shape):
     set_axes_equal(ax)
     plt.show()
 
-    hull = extrusions.hull()
-    hull.write("foo.scad")
+    extrusions.write("foo.scad")
 
 
 if __name__ == "__main__":
