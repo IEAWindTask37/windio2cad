@@ -233,8 +233,10 @@ def write_openscad(lofted_shape):
     set_axes_equal(ax)
     plt.show()
 
-    hull = polygons.hull()
-    hull.write("foo.scad")
+    polygons.write("foo.scad")
+
+    # hull = polygons.hull()
+    # hull.write("foo.scad")
 
 
 if __name__ == "__main__":
