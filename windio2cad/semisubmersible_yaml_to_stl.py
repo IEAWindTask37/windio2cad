@@ -84,7 +84,7 @@ def create_scad_file(
         The variables to be rendered with OpenSCAD.
 
     renderer_filename: str
-        The filename that contians the OpenSCAD modules that
+        The filename that contains the OpenSCAD modules that
         create each member of the platform.
 
     output_filename: str
@@ -95,6 +95,7 @@ def create_scad_file(
         for var_name, var_value in scad_variables.items():
             f.write(f"{var_name} = {var_value};\n")
         f.write(f"include <{renderer_filename}>;\n")
+        f.write("$fn = 25;")
 
 
 if __name__ == "__main__":
@@ -121,7 +122,7 @@ if __name__ == "__main__":
     print(f"Path to OpenSCAD: {args.openscad}")
     print("Parsing .yaml ...")
     scad_variables = translate_yaml_to_scad_variables(args.input)
-    create_scad_file(scad_variables, args.modules, intermediate_openscad)
+    create_scad_file(scad_variables=scad_variables, output_filename="intermediate.scad", renderer_filename=args.modules)
     print("Creating .stl ...")
     subprocess.run([args.openscad, "-o", args.output, intermediate_openscad])
     print("Done!")
