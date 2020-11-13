@@ -117,6 +117,7 @@ if __name__ == "__main__":
     intermediate_openscad = "intermediate.scad"
 
     print(f"Input yaml: {args.input}")
+    print(f"Output .stl: {args.output}")
     print(f"Intermediate OpenSCAD: {intermediate_openscad}")
     print(f"OpenSCAD modules: {args.modules}")
     print(f"Path to OpenSCAD: {args.openscad}")
