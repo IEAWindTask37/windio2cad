@@ -17,16 +17,16 @@ union() {
     pontoon(column2_joint1, column2_joint2, column3_joint1, column3_joint2, delta_pontoon_upper23_joint1, delta_pontoon_upper23_joint2, delta_pontoon_upper23_outer_grid, delta_pontoon_upper23_outer_values);
 
     pontoon(main_column_joint1, main_column_joint2, column1_joint1, column1_joint2, Y_pontoon_upper1_joint1, Y_pontoon_upper1_joint2, Y_pontoon_upper1_outer_grid, Y_pontoon_upper1_outer_values);
-    pontoon(main_column_joint1, main_column_joint2, column2_joint1, column2_joint2, Y_pontoon_upper2_joint1, Y_pontoon_upper2_joint2, Y_pontoon_upper2_outer_grid, Y_pontoon_upper2_outer_values);
-    pontoon(main_column_joint1, main_column_joint2, column3_joint1, column3_joint2, Y_pontoon_upper3_joint1, Y_pontoon_upper3_joint2, Y_pontoon_upper3_outer_grid, Y_pontoon_upper3_outer_values);
+    // pontoon(main_column_joint1, main_column_joint2, column2_joint1, column2_joint2, Y_pontoon_upper2_joint1, Y_pontoon_upper2_joint2, Y_pontoon_upper2_outer_grid, Y_pontoon_upper2_outer_values);
+    // pontoon(main_column_joint1, main_column_joint2, column3_joint1, column3_joint2, Y_pontoon_upper3_joint1, Y_pontoon_upper3_joint2, Y_pontoon_upper3_outer_grid, Y_pontoon_upper3_outer_values);
 
     pontoon(main_column_joint1, main_column_joint2, column1_joint1, column1_joint2, Y_pontoon_lower1_joint1, Y_pontoon_lower1_joint2, Y_pontoon_lower1_outer_grid, Y_pontoon_lower1_outer_values);
     pontoon(main_column_joint1, main_column_joint2, column2_joint1, column2_joint2, Y_pontoon_lower2_joint1, Y_pontoon_lower2_joint2, Y_pontoon_lower2_outer_grid, Y_pontoon_lower2_outer_values);
     pontoon(main_column_joint1, main_column_joint2, column3_joint1, column3_joint2, Y_pontoon_lower3_joint1, Y_pontoon_lower3_joint2, Y_pontoon_lower3_outer_grid, Y_pontoon_lower3_outer_values);
 
     pontoon(main_column_joint1, main_column_joint2, column1_joint1, column1_joint2, cross_pontoon1_joint1, cross_pontoon1_joint2, cross_pontoon1_outer_grid, cross_pontoon1_outer_values);
-    pontoon(main_column_joint1, main_column_joint2, column2_joint1, column2_joint2, cross_pontoon2_joint1, cross_pontoon2_joint2, cross_pontoon2_outer_grid, cross_pontoon2_outer_values);
-    pontoon(main_column_joint1, main_column_joint2, column3_joint1, column3_joint2, cross_pontoon3_joint1, cross_pontoon3_joint2, cross_pontoon3_outer_grid, cross_pontoon3_outer_values);
+    // pontoon(main_column_joint1, main_column_joint2, column2_joint1, column2_joint2, cross_pontoon2_joint1, cross_pontoon2_joint2, cross_pontoon2_outer_grid, cross_pontoon2_outer_values);
+    // pontoon(main_column_joint1, main_column_joint2, column3_joint1, column3_joint2, cross_pontoon3_joint1, cross_pontoon3_joint2, cross_pontoon3_outer_grid, cross_pontoon3_outer_values);
 }
 
 /*** 
