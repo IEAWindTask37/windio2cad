@@ -1,3 +1,4 @@
+from typing import Dict, List, Union, Any
 import yaml
 import numpy as np
 import solid
@@ -5,20 +6,66 @@ from numpy.linalg import norm
 
 
 class FloatingPlatform:
+    """
+    This class generates OpenSCAD code for an arbitrary set of members and
+    joints in an ontology YAML file.
+    """
+
     def __init__(self, yaml_filename: str):
+        """
+        This takes the YAML input name and sets up some instance
+        variables. floating_platform_dict holds the dictionary
+        for the floating platform ontology portion of the YAML
+        file after the YAML file is ready. joints_dict holds
+        the cartesian coordinates of all the joints after the
+        YAML file is read in.
+
+        Parameters
+        ----------
+        yaml_filename: str
+            The absolute path to the ontology YAML file as a string.
+        """
         self.yaml_filename = yaml_filename
         self.floating_platform_dict = None
         self.joints_dict = None
 
     @property
-    def floating_platform(self):
+    def floating_platform(self) -> Dict[str, Any]:
+        """
+        Reads the floating platform portion of the YAML ontology and
+        returns it as a dictionary.
+
+        This method uses memoization to cache the results of reading the
+        floating platform. For the first time the floating platform is
+        read, self.floating_platform_dict is None, and the file is read
+        and parsed as YAML. This parsed result is stored in
+        self.floating_platform_dict. Subsequent calls return this cached
+        value without reading and parsing the YAML again.
+
+        Returns
+        -------
+        Dict[str, Any]
+            The dictionary that describes the floating platform.
+        """
         if self.floating_platform_dict is None:
             geometry = yaml.load(open(self.yaml_filename, "r"), yaml.FullLoader)
             self.floating_platform_dict = geometry["components"]["floating_platform"]
         return self.floating_platform_dict
 
     @property
-    def joints(self):
+    def joints(self) -> Dict[str, np.array]:
+        """
+        Converts all normal and axial joints into cartesian coordinates.
+
+        This method uses memoization. The first time it calculates all the
+        cartesian coordinates it caches these conversions in self.joints_dict.
+        Subsequent calls return this cached value.
+
+        Returns
+        -------
+        Dict[str, np.array]
+            The names of joints mapped to their cartesian coordinates
+        """
         if self.joints_dict is None:
             self.joints_dict = {}
             for member in self.floating_platform["components"]["joints"]:
@@ -34,18 +81,52 @@ class FloatingPlatform:
                         self.joints_dict[axial_joint["name"]] = axial_cartesian
         return self.joints_dict
 
-    def members_union(self):
+    def members_union(self) -> solid.OpenSCADObject:
+        """
+        Creates a union of all the members on the floating platform.
+
+        Returns
+        -------
+        solid.OpenSCADObject
+            Returns and OpenSCAD object that is the union of all members.
+        """
         members = []
         for member in self.floating_platform["components"]["members"]:
             joint1 = self.joints[member["joint1"]]
             joint2 = self.joints[member["joint2"]]
             grid = member["outer_shape"]["outer_diameter"]["grid"]
             values = member["outer_shape"]["outer_diameter"]["values"]
-            members.append(self.rod(joint1, joint2, grid, values))
+            members.append(self.member(joint1, joint2, grid, values))
         return solid.union()(members)
 
-    def rod(self, a, b, grid, values):
-        direction = b - a
+    def member(self, joint1: np.array, joint2: np.array, grid: List[float], values: List[float]) -> solid.OpenSCADObject:
+        """
+        Creates a member between two points.
+
+        See more information at:
+        http://forum.openscad.org/Rods-between-3D-points-td13104.html
+
+        Parameters
+        ----------
+        joint1: np.array
+            Cartesian coordinates of the first joint.
+
+        joint2: np.array
+            Cartesian coordinates of second joint
+
+        grid: List[float]
+            Grid of axial positions on the member, as a fraction of the
+            length of the member.
+
+        values: List[float]
+            Diameters at each position on the grid.
+
+        Returns
+        -------
+        solid.OpenSCADObject
+            Returns the transformed member ready to put into the union.
+        """
+        direction = joint2 - joint1
         height = norm(direction)
 
         member_shapes = []
@@ -61,7 +142,7 @@ class FloatingPlatform:
         member_union = solid.union()(tuple(member_shapes))
 
         if direction[0] == 0 and direction[1] == 0:
-            return solid.translate((a[0], a[1], min(a[2], b[2])))(member_union)
+            return solid.translate((joint1[0], joint1[1], min(joint1[2], joint2[2])))(member_union)
         else:
             w = direction / height
             u0 = np.cross(w, [0, 0, 1])
@@ -71,9 +152,9 @@ class FloatingPlatform:
 
             # The mulmatrix must be a list of lists
             multmatrix = (
-                (u[0], v[0], w[0], a[0]),
-                (u[1], v[1], w[1], a[1]),
-                (u[2], v[2], w[2], a[2]),
+                (u[0], v[0], w[0], joint1[0]),
+                (u[1], v[1], w[1], joint1[1]),
+                (u[2], v[2], w[2], joint1[2]),
                 (0, 0, 0, 1)
             )
             return solid.multmatrix(m=multmatrix)(member_union)
