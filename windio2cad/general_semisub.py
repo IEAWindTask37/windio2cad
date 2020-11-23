@@ -52,7 +52,9 @@ class FloatingPlatform:
         for i in range(len(grid) - 1):
             section_height = (height * grid[i + 1]) - (height * grid[i])
             bottom = (0.0, 0.0, height * grid[i])
-            cylinder = solid.cylinder(r1=values[i], r2=values[i + 1], h=section_height)
+            r1 = values[i] / 2.0
+            r2 = values[i + 1] / 2.0
+            cylinder = solid.cylinder(r1=r1, r2=r2, h=section_height)
             translation = solid.translate(bottom)(cylinder)
             member_shapes.append(translation)
 
