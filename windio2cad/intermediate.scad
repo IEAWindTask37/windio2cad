@@ -75,3 +75,4 @@ cross_pontoon3_joint2 = 0.9103125;
 cross_pontoon3_outer_grid = [0.0, 1.0];
 cross_pontoon3_outer_values = [1.6, 1.6];
 include <modules_for_rendering_semisubmersible.scad>;
+$fn = 25;
