@@ -49,7 +49,7 @@ class FloatingPlatform:
         member_union = solid.union()((solid.cylinder(r1=r1, r2=r2, h=height)))
 
         if direction[0] == 0 and direction[1] == 0:
-            return solid.translate([a[0], a[1], min(a[2], b[2])])(member_union)
+            return solid.translate((a[0], a[1], min(a[2], b[2])))(member_union)
         else:
             w = direction / height
             u0 = np.cross(w, [0, 0, 1])
@@ -58,12 +58,12 @@ class FloatingPlatform:
             v = v0 / norm(v0)
 
             # The mulmatrix must be a list of lists
-            multmatrix = [
-                [u[0], v[0], w[0], a[0]],
-                [u[1], v[1], w[1], a[1]],
-                [u[2], v[2], w[2], a[2]],
-                [0, 0, 0, 1]
-            ]
+            multmatrix = (
+                (u[0], v[0], w[0], a[0]),
+                (u[1], v[1], w[1], a[1]),
+                (u[2], v[2], w[2], a[2]),
+                (0, 0, 0, 1)
+            )
             return solid.multmatrix(m=multmatrix)(member_union)
 
 
