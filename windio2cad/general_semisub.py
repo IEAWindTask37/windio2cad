@@ -39,15 +39,29 @@ class FloatingPlatform:
         for member in self.floating_platform["components"]["members"]:
             joint1 = self.joints[member["joint1"]]
             joint2 = self.joints[member["joint2"]]
-            members.append(self.rod(joint1, joint2, 1.0, 1.0))
+            grid = member["outer_shape"]["outer_diameter"]["grid"]
+            values = member["outer_shape"]["outer_diameter"]["values"]
+            members.append(self.rod(joint1, joint2, grid, values))
         return solid.union()(members)
 
-    def rod(self, a, b, r1, r2):
+    def rod(self, a, b, grid, values):
         direction = b - a
         height = norm(direction)
 
+        member_shapes = []
+        for i in range(len(grid) - 1):
+            section_height = (height * grid[i + 1]) - (height * grid[i])
+            bottom = (0.0, 0.0, height * grid[i])
+            r1 = values[i] / 2.0
+            r2 = values[i + 1] / 2.0
+            cylinder = solid.cylinder(r1=r1, r2=r2, h=section_height)
+            translation = solid.translate(bottom)(cylinder)
+            member_shapes.append(translation)
+
+        member_union = solid.union()(tuple(member_shapes))
+
         if direction[0] == 0 and direction[1] == 0:
-            return solid.translate([a[0], a[1], min(a[2], b[2])])(solid.cylinder(r1=r1, r2=r2, h=height))
+            return solid.translate((a[0], a[1], min(a[2], b[2])))(member_union)
         else:
             w = direction / height
             u0 = np.cross(w, [0, 0, 1])
@@ -56,13 +70,13 @@ class FloatingPlatform:
             v = v0 / norm(v0)
 
             # The mulmatrix must be a list of lists
-            multmatrix = [
-                [u[0], v[0], w[0], a[0]],
-                [u[1], v[1], w[1], a[1]],
-                [u[2], v[2], w[2], a[2]],
-                [0, 0, 0, 1]
-            ]
-            return solid.multmatrix(m=multmatrix)(solid.cylinder(r1=r1, r2=r2, h=height))
+            multmatrix = (
+                (u[0], v[0], w[0], a[0]),
+                (u[1], v[1], w[1], a[1]),
+                (u[2], v[2], w[2], a[2]),
+                (0, 0, 0, 1)
+            )
+            return solid.multmatrix(m=multmatrix)(member_union)
 
 
 if __name__ == "__main__":
