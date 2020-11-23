@@ -1,7 +1,9 @@
-from typing import Dict, List, Union, Any
+from typing import Dict, List, Any
+import argparse
 import yaml
 import numpy as np
 import solid
+import subprocess
 from numpy.linalg import norm
 
 
@@ -161,5 +163,31 @@ class FloatingPlatform:
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        description="Translate a yaml definition of a semisubmersible platform into an OpenSCAD source file."
+    )
+    parser.add_argument("--input", help="Input .yaml file", required=True)
+    parser.add_argument(
+        "--output",
+        help="Output .stl file. If the file exists it will be overwritten.",
+        required=True,
+    )
+    parser.add_argument("--openscad", help="Path to OpenSCAD executable", required=True)
+    args = parser.parse_args()
+
+    intermediate_openscad = "intermediate.scad"
+
+    print(f"Input yaml: {args.input}")
+    print(f"Output .stl: {args.output}")
+    print(f"Intermediate OpenSCAD: {intermediate_openscad}")
+    print(f"Path to OpenSCAD: {args.openscad}")
+    print("Parsing .yaml ...")
     fp = FloatingPlatform("semisubmersible.yaml")
-    print(solid.scad_render(fp.members_union()))
+
+    with open(intermediate_openscad, "w") as f:
+        f.write("$fn = 25;\n")
+        f.write(solid.scad_render(fp.members_union()))
+
+    print("Creating .stl ...")
+    subprocess.run([args.openscad, "-o", args.output, intermediate_openscad])
+    print("Done!")
