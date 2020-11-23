@@ -46,8 +46,10 @@ class FloatingPlatform:
         direction = b - a
         height = norm(direction)
 
+        member_union = solid.union()((solid.cylinder(r1=r1, r2=r2, h=height)))
+
         if direction[0] == 0 and direction[1] == 0:
-            return solid.translate([a[0], a[1], min(a[2], b[2])])(solid.cylinder(r1=r1, r2=r2, h=height))
+            return solid.translate([a[0], a[1], min(a[2], b[2])])(member_union)
         else:
             w = direction / height
             u0 = np.cross(w, [0, 0, 1])
@@ -62,7 +64,7 @@ class FloatingPlatform:
                 [u[2], v[2], w[2], a[2]],
                 [0, 0, 0, 1]
             ]
-            return solid.multmatrix(m=multmatrix)(solid.cylinder(r1=r1, r2=r2, h=height))
+            return solid.multmatrix(m=multmatrix)(member_union)
 
 
 if __name__ == "__main__":
