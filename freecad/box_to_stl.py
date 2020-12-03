@@ -1,7 +1,9 @@
+import FreeCAD
 import Part
+import Mesh
 
-FreeCAD.ActiveDocument = App.newDocument("myDocument")
-myPart = FreeCAD.ActiveDocument.addObject("Part::Feature", "myPart")
-cube = Part.makeBox(2, 2, 2)
-myPart.Shape = cube
-myPart.Shape.exportStl("foo.stl")
+shape = Part.makeSphere(1)
+doc = App.newDocument("Doc")
+pf = doc.addObject("Part::Feature", "myShape")
+pf.Shape = shape
+Mesh.export([pf], "bar.stl")
