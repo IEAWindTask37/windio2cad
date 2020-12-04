@@ -20,4 +20,8 @@ shape3.transformShape(m)
 pf3 = doc.addObject("Part::Feature", "myShape3")
 pf3.Shape = shape3
 
-Mesh.export([pf1, pf2, pf3], "bar.stl")
+fuse2 = shape1.fuse(shape2)
+pf_fuse2 = doc.addObject("Part::Feature", "myFuse4")
+pf_fuse2.Shape = fuse2
+
+Mesh.export([pf_fuse2], "foo.stl")
