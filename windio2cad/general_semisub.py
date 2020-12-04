@@ -152,7 +152,6 @@ class FloatingPlatform:
             v0 = np.cross(w, u)
             v = v0 / norm(v0)
 
-            # The mulmatrix must be a list of lists
             multmatrix = (
                 (u[0], v[0], w[0], joint1[0]),
                 (u[1], v[1], w[1], joint1[1]),
