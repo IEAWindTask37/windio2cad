@@ -4,24 +4,17 @@ import Mesh
 
 doc = App.newDocument("Doc")
 
-shape1 = Part.makeSphere(1)
-pf1 = doc.addObject("Part::Feature", "myShape1")
-pf1.Shape = shape1
+radii = [1.1, 1.2, 1.3, 1.4, 1.5, 1.4, 1.3, 1.2, 1.1]
 
-shape2 = Part.makeSphere(1)
-shape2.translate((10, 10, 10))
-pf2 = doc.addObject("Part::Feature", "myShape2")
-pf2.Shape = shape2
+union = []
+part_features = []
+for i, r in enumerate(radii):
+    shape_name = f"shape_{i}"
+    shape = Part.makeSphere(r)
+    shape.translate((0, 0, i))
+    part_feature = doc.addObject("Part::Feature", shape_name)
+    part_feature.Shape = shape
+    union.append(shape)
+    part_features.append(part_feature)
 
-m = FreeCAD.Matrix()
-m.move((2, 2, 2))
-shape3 = Part.makeSphere(1)
-shape3.transformShape(m)
-pf3 = doc.addObject("Part::Feature", "myShape3")
-pf3.Shape = shape3
-
-fuse2 = shape1.fuse(shape2)
-pf_fuse2 = doc.addObject("Part::Feature", "myFuse4")
-pf_fuse2.Shape = fuse2
-
-Mesh.export([pf_fuse2], "foo.stl")
+Mesh.export(part_features, "foo.stl")
