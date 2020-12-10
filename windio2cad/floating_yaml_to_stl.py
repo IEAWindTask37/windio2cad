@@ -70,9 +70,9 @@ class FloatingPlatform:
         """
         if self.joints_dict is None:
             self.joints_dict = {}
-            for member in self.floating_platform["components"]["joints"]:
+            for member in self.floating_platform["joints"]:
                 self.joints_dict[member["name"]] = np.array(member["location"])
-            for member in self.floating_platform["components"]["members"]:
+            for member in self.floating_platform["members"]:
                 joint1 = self.joints_dict[member["joint1"]]
                 joint2 = self.joints_dict[member["joint2"]]
                 direction = joint2 - joint1
@@ -93,7 +93,7 @@ class FloatingPlatform:
             Returns and OpenSCAD object that is the union of all members.
         """
         members = []
-        for member in self.floating_platform["components"]["members"]:
+        for member in self.floating_platform["members"]:
             joint1 = self.joints[member["joint1"]]
             joint2 = self.joints[member["joint2"]]
             grid = member["outer_shape"]["outer_diameter"]["grid"]
@@ -182,7 +182,7 @@ if __name__ == "__main__":
     print(f"Intermediate OpenSCAD: {intermediate_openscad}")
     print(f"Path to OpenSCAD: {args.openscad}")
     print("Parsing .yaml ...")
-    fp = FloatingPlatform("semisubmersible.yaml")
+    fp = FloatingPlatform(args.input)
 
     with open(intermediate_openscad, "w") as f:
         f.write("$fn = 25;\n")
