@@ -5,6 +5,7 @@ import numpy as np
 import solid
 import subprocess
 from numpy.linalg import norm
+from math import sin, cos
 
 
 class FloatingPlatform:
@@ -71,7 +72,15 @@ class FloatingPlatform:
         if self.joints_dict is None:
             self.joints_dict = {}
             for member in self.floating_platform["joints"]:
-                self.joints_dict[member["name"]] = np.array(member["location"])
+                if "cylindrical" in member and member["cylindrical"]:
+                    r = member["location"][0]
+                    theta = member["location"][1]
+                    x = r * cos(theta)
+                    y = r * sin(theta)
+                    z = member["location"][2]
+                    self.joints_dict[member["name"]] = np.array([x, y, z])
+                else:
+                    self.joints_dict[member["name"]] = np.array(member["location"])
             for member in self.floating_platform["members"]:
                 joint1 = self.joints_dict[member["joint1"]]
                 joint2 = self.joints_dict[member["joint2"]]
