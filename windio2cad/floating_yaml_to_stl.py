@@ -219,8 +219,8 @@ if __name__ == "__main__":
 
     with open(intermediate_openscad, "w") as f:
         f.write("$fn = 25;\n")
-        f.write(solid.scad_render(fp.members_union()))
-        f.write(solid.scad_render(tower.tower_union()))
+        big_union = (solid.union()([fp.members_union(), tower.tower_union()]))
+        f.write(solid.scad_render(big_union))
 
     print("Creating .stl ...")
     subprocess.run([args.openscad, "-o", args.output, intermediate_openscad])
