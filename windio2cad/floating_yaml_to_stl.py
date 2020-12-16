@@ -8,6 +8,28 @@ from numpy.linalg import norm
 from math import sin, cos
 
 
+class Tower:
+    def __init__(self, yaml_filename: str):
+        self.yaml_filename = yaml_filename
+        geometry = yaml.load(open(self.yaml_filename, "r"), yaml.FullLoader)
+        self.height = geometry["components"]["tower"]["outer_shape_bem"]["reference_axis"]["z"]["values"][-1]
+        self.grid = geometry["components"]["tower"]["outer_shape_bem"]["outer_diameter"]["grid"]
+        self.values = geometry["components"]["tower"]["outer_shape_bem"]["outer_diameter"]["values"]
+
+    def tower_union(self) -> solid.OpenSCADObject:
+        sections = []
+        for i in range(1, len(self.grid)):
+            bottom = self.grid[i - 1] * self.height
+            section_height = (self.grid[i] - self.grid[i - 1]) * self.height
+            r1 = self.values[i - 1]
+            r2 = self.values[i]
+            cylinder = solid.cylinder(r1=r1, r2=r2, h=section_height)
+            translation = solid.translate((0.0, 0.0, bottom))(cylinder)
+            sections.append(translation)
+        section_union = solid.union()(sections)
+        return section_union
+
+
 class FloatingPlatform:
     """
     This class generates OpenSCAD code for an arbitrary set of members and
@@ -191,11 +213,14 @@ if __name__ == "__main__":
     print(f"Intermediate OpenSCAD: {intermediate_openscad}")
     print(f"Path to OpenSCAD: {args.openscad}")
     print("Parsing .yaml ...")
+
     fp = FloatingPlatform(args.input)
+    tower = Tower(args.input)
 
     with open(intermediate_openscad, "w") as f:
         f.write("$fn = 25;\n")
         f.write(solid.scad_render(fp.members_union()))
+        f.write(solid.scad_render(tower.tower_union()))
 
     print("Creating .stl ...")
     subprocess.run([args.openscad, "-o", args.output, intermediate_openscad])
