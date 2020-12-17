@@ -8,21 +8,28 @@ from numpy.linalg import norm
 from math import sin, cos
 
 
-class Nacelle:
+class RNA:
     """
     This class generates a nacelle
     """
+
     def __init__(self, yaml_filename: str):
         geometry = yaml.load(open(yaml_filename, "r"), yaml.FullLoader)
         self.nacelle_dict = geometry["components"]["nacelle"]
         self.tower_dict = geometry["components"]["tower"]
 
-    def nacelle_union(self) -> solid.OpenSCADObject:
-        length = 2.2 * self.nacelle_dict["drivetrain"]["overhang"]
-        height = 2.2 * self.nacelle_dict["drivetrain"]["distance_tt_hub"]
-        width = height
-        z_height = 0.5 * height + self.tower_dict["outer_shape_bem"]["reference_axis"]["z"]["values"][-1]
-        cube = solid.cube(size=[length, width, height], center=True)
+    def rna_union(self) -> solid.OpenSCADObject:
+        nacelle_length = 2.2 * self.nacelle_dict["drivetrain"]["overhang"]
+        nacelle_height = 2.2 * self.nacelle_dict["drivetrain"]["distance_tt_hub"]
+        nacelle_width = nacelle_height
+        z_height = (
+            0.5 * nacelle_height
+            + self.tower_dict["outer_shape_bem"]["reference_axis"]["z"]["values"][-1]
+        )
+
+        cube = solid.cube(
+            size=[nacelle_length, nacelle_width, nacelle_height], center=True
+        )
         nacelle = solid.translate([0.0, 0.0, z_height])(cube)
         return nacelle
 
@@ -42,9 +49,15 @@ class Tower:
             The name of the YAML file containing the geometry specification
         """
         geometry = yaml.load(open(yaml_filename, "r"), yaml.FullLoader)
-        self.height = geometry["components"]["tower"]["outer_shape_bem"]["reference_axis"]["z"]["values"][-1]
-        self.grid = geometry["components"]["tower"]["outer_shape_bem"]["outer_diameter"]["grid"]
-        self.values = geometry["components"]["tower"]["outer_shape_bem"]["outer_diameter"]["values"]
+        self.height = geometry["components"]["tower"]["outer_shape_bem"][
+            "reference_axis"
+        ]["z"]["values"][-1]
+        self.grid = geometry["components"]["tower"]["outer_shape_bem"][
+            "outer_diameter"
+        ]["grid"]
+        self.values = geometry["components"]["tower"]["outer_shape_bem"][
+            "outer_diameter"
+        ]["values"]
 
     def tower_union(self) -> solid.OpenSCADObject:
         """
@@ -170,7 +183,9 @@ class FloatingPlatform:
             members.append(self.member(joint1, joint2, grid, values))
         return solid.union()(members)
 
-    def member(self, joint1: np.array, joint2: np.array, grid: List[float], values: List[float]) -> solid.OpenSCADObject:
+    def member(
+        self, joint1: np.array, joint2: np.array, grid: List[float], values: List[float]
+    ) -> solid.OpenSCADObject:
         """
         Creates a member between two points.
 
@@ -213,7 +228,9 @@ class FloatingPlatform:
         member_union = solid.union()(tuple(member_shapes))
 
         if direction[0] == 0 and direction[1] == 0:
-            return solid.translate((joint1[0], joint1[1], min(joint1[2], joint2[2])))(member_union)
+            return solid.translate((joint1[0], joint1[1], min(joint1[2], joint2[2])))(
+                member_union
+            )
         else:
             w = direction / height
             u0 = np.cross(w, [0, 0, 1])
@@ -226,7 +243,7 @@ class FloatingPlatform:
                 (u[0], v[0], w[0], joint1[0]),
                 (u[1], v[1], w[1], joint1[1]),
                 (u[2], v[2], w[2], joint1[2]),
-                (0, 0, 0, 1)
+                (0, 0, 0, 1),
             )
             return solid.multmatrix(m=multmatrix)(member_union)
 
@@ -254,11 +271,13 @@ if __name__ == "__main__":
 
     fp = FloatingPlatform(args.input)
     tower = Tower(args.input)
-    nacelle = Nacelle(args.input)
+    rna = RNA(args.input)
 
     with open(intermediate_openscad, "w") as f:
         f.write("$fn = 25;\n")
-        big_union = solid.union()([fp.members_union(), tower.tower_union(), nacelle.nacelle_union()])
+        big_union = solid.union()(
+            [fp.members_union(), tower.tower_union(), rna.rna_union()]
+        )
         f.write(solid.scad_render(big_union))
 
     print("Creating .stl ...")
