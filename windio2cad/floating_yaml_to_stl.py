@@ -18,8 +18,8 @@ class Nacelle:
         self.tower_dict = geometry["components"]["tower"]
 
     def nacelle_union(self) -> solid.OpenSCADObject:
-        length = 1.1 * self.nacelle_dict["drivetrain"]["overhang"]
-        height = 1.1 * self.nacelle_dict["drivetrain"]["distance_tt_hub"]
+        length = 2.2 * self.nacelle_dict["drivetrain"]["overhang"]
+        height = 2.2 * self.nacelle_dict["drivetrain"]["distance_tt_hub"]
         width = height
         z_height = 0.5 * height + self.tower_dict["outer_shape_bem"]["reference_axis"]["z"]["values"][-1]
         cube = solid.cube(size=[length, width, height], center=True)
@@ -59,8 +59,8 @@ class Tower:
         for i in range(1, len(self.grid)):
             bottom = self.grid[i - 1] * self.height
             section_height = (self.grid[i] - self.grid[i - 1]) * self.height
-            r1 = self.values[i - 1]
-            r2 = self.values[i]
+            r1 = self.values[i - 1] / 2.0
+            r2 = self.values[i] / 2.0
             cylinder = solid.cylinder(r1=r1, r2=r2, h=section_height)
             translation = solid.translate((0.0, 0.0, bottom))(cylinder)
             sections.append(translation)
