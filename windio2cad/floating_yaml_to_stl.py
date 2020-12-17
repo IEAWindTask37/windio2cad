@@ -17,21 +17,27 @@ class RNA:
         geometry = yaml.load(open(yaml_filename, "r"), yaml.FullLoader)
         self.nacelle_dict = geometry["components"]["nacelle"]
         self.tower_dict = geometry["components"]["tower"]
+        self.hub_dict = geometry["components"]["hub"]
 
     def rna_union(self) -> solid.OpenSCADObject:
-        nacelle_length = 2.2 * self.nacelle_dict["drivetrain"]["overhang"]
+        tower_height = self.tower_dict["outer_shape_bem"]["reference_axis"]["z"]["values"][-1]
+        nacelle_length = 2.0 * self.nacelle_dict["drivetrain"]["overhang"]
         nacelle_height = 2.2 * self.nacelle_dict["drivetrain"]["distance_tt_hub"]
         nacelle_width = nacelle_height
-        z_height = (
-            0.5 * nacelle_height
-            + self.tower_dict["outer_shape_bem"]["reference_axis"]["z"]["values"][-1]
-        )
+        nacelle_z_height = 0.5 * nacelle_height + tower_height
 
         cube = solid.cube(
             size=[nacelle_length, nacelle_width, nacelle_height], center=True
         )
-        nacelle = solid.translate([0.0, 0.0, z_height])(cube)
-        return nacelle
+
+        hub_center_y = 0.0
+        hub_center_x = self.nacelle_dict["drivetrain"]["overhang"]
+        hub_radius = self.hub_dict["diameter"] / 2.0
+        hub = solid.translate([hub_center_x, hub_center_y, 0.0])(solid.sphere(hub_radius))
+
+        union = solid.union()([hub, cube])
+        rna = solid.translate([0.0, 0.0, nacelle_z_height])(union)
+        return rna
 
 
 class Tower:
