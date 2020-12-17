@@ -1,4 +1,4 @@
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
 import argparse
 import yaml
 import numpy as np
@@ -14,7 +14,20 @@ from math import sin, cos
 
 
 class Blade:
+    """
+    This class renders one blade for the rotor.
+    """
+
     def __init__(self, yaml_filename: str):
+        """
+        The constructor opens the YAML file and extracts the blade
+        and airfoil information into instance attributes.
+
+        Parameters
+        ----------
+        yaml_filename: str
+            Filename that contains the geometry for the rotor.
+        """
         geometry = yaml.load(open(yaml_filename, "r"), yaml.FullLoader)
         self.outer_shape = geometry["components"]["blade"]["outer_shape_bem"]
         self.airfoils = geometry["airfoils"]
@@ -25,6 +38,25 @@ class Blade:
         return myspline(xi)
 
     def generate_lofted(self, n_span_min=100, n_xy=400) -> np.array:
+        """
+        Creates the lofted shape of a blade and returns a NumPy array
+        of the polygons at each cross section.
+
+        Parameters
+        ----------
+        n_span_min: int
+            Number of cross sections to create across span of
+            blade.
+
+        n_xy: int
+            The number of x, y points in the polygons at each slice of
+            the blade.
+
+        Returns
+        -------
+        np.array
+            An array of the polygons at each cross section of the blade.
+        """
         # Use yaml grid points and others that we add
         r_span = np.unique(
             np.r_[
@@ -159,20 +191,46 @@ class Blade:
         return lofted_shape
 
     def blade_hull(self, downsample_z: int = 1) -> solid.OpenSCADObject:
-        lofted_shape = self.generate_lofted()
+        """
+        This creates an OpenSCAD hull object around cross sections of a blade,
+        thereby rendering the complete geometry for a single blade.
 
+        Parameters
+        ----------
+        downsample_z: int
+            Skips to every nth sample across the z axis of the blade. For
+            example, 10 uses only every tenth cross section.
+
+        Returns
+        -------
+        solid.OpenSCADObject
+            The OpenSCAD object that is ready to render to code.
+        """
+
+        # Get the lofted shape and the number of sections across its span
+        lofted_shape = self.generate_lofted()
         n_span = lofted_shape.shape[0]
+
+        # Find the distance between each cross section. Find the minimum of
+        # these distances and multiply by 0.1. This will be the height of each
+        # extrusion for each cross section.
 
         diff_z = []
         for k in range(n_span - 1):
             diff_z.append(lofted_shape[k + 1, 0, 2] - lofted_shape[k, 0, 2])
         dz = 0.1 * min(diff_z)
 
+        # Make the range to sample the span of the blade. If downsample_z
+        # is 1, that means every cross section will be plotted. If it is
+        # greater than 1, samples will be skipped. This is reflected in
+        # the range to sample the span.
+
         if downsample_z == 1:
             n_span_range = range(n_span)
         else:
             n_span_range = range(0, n_span, downsample_z)
 
+        # Create one extrusion per cross section.
         extrusions = []
         for k in n_span_range:
             bottom = lofted_shape[k, 0, 2]
@@ -182,36 +240,71 @@ class Blade:
             translated_extrusion = solid.translate((0.0, 0.0, bottom))(extrusion)
             extrusions.append(translated_extrusion)
 
+        # Create a hull around all the cross sections and return it.
         hull_of_extrusions = solid.hull()(extrusions)
         return hull_of_extrusions
 
 
 class RNA:
     """
-    This class generates a nacelle
+    This class generates a rotor nacelle assembly (RNA)
     """
 
     def __init__(self, yaml_filename: str):
+        """
+        This loads the YAML file and extracts the nacelle, tower, and
+        hub geometry information and puts those data in instance
+        attributes.
+
+        Parameters
+        ----------
+        yaml_filename: str
+            The absolute path to the file containing the YAML
+        """
         geometry = yaml.load(open(yaml_filename, "r"), yaml.FullLoader)
         self.nacelle_dict = geometry["components"]["nacelle"]
         self.tower_dict = geometry["components"]["tower"]
         self.hub_dict = geometry["components"]["hub"]
 
-    def rna_union(self, blade_object: solid.OpenSCADObject = None) -> solid.OpenSCADObject:
+    def rna_union(self, blade_object: Optional[solid.OpenSCADObject] = None) -> solid.OpenSCADObject:
+        """
+        This creates a union of the components of the RNA. In this method,
+        the hub and nacelle are created. Optionally, a single blade can
+        be passed as an object. If a blade is present in the arguments, then
+        three copies are assembled into a rotor.
+
+        Parameters
+        ----------
+        blade_object: Optional[solid.OpenSCADObject]
+            Optional. If specified, this is a single blade, three copies
+            of which are assembled into a rotor.
+
+        Returns
+        -------
+        solid.OpenSCADObject
+            RNA union object ready for rendering to OpenSCAD.
+        """
+
+        # Get tower height and nacelle dimensions.
         tower_height = self.tower_dict["outer_shape_bem"]["reference_axis"]["z"]["values"][-1]
         nacelle_length = 2.0 * self.nacelle_dict["drivetrain"]["overhang"]
         nacelle_height = 2.2 * self.nacelle_dict["drivetrain"]["distance_tt_hub"]
         nacelle_width = nacelle_height
         nacelle_z_height = 0.5 * nacelle_height + tower_height
 
+        # The "cube" is the nacelle
         cube = solid.cube(
             size=[nacelle_length, nacelle_width, nacelle_height], center=True
         )
 
+        # The hub is a sphere
         hub_center_y = 0.0
         hub_center_x = self.nacelle_dict["drivetrain"]["overhang"]
         hub_radius = self.hub_dict["diameter"] / 2.0
         hub = solid.translate((hub_center_x, hub_center_y, 0.0))(solid.sphere(hub_radius))
+
+        # If blades are present, create a rotor; otherwise just return the
+        # hub attached to the nacelle
 
         if blade_object is None:
             union = solid.union()((hub, cube))
@@ -233,7 +326,12 @@ class Tower:
 
     def __init__(self, yaml_filename: str):
         """
-        This initializes the tower create code.
+        This reads the tower YAML file and extracts the data needed
+        for the geometry of the tower into instance attributes.
+
+        The tower is assumed to extend along the z axis, and the tower
+        height is taken to be the height of the last element on the
+        outer_diameter list.
 
         Parameters
         ----------
@@ -253,7 +351,7 @@ class Tower:
 
     def tower_union(self) -> solid.OpenSCADObject:
         """
-        This method creates the union of cylinders for a tower.
+        This method creates the union of conical cylinders for a tower.
 
         Returns
         -------
@@ -462,7 +560,7 @@ if __name__ == "__main__":
     print("Parsing .yaml ...")
 
     blade = Blade(args.input)
-    blade_object = blade.blade_hull(downsample_z=20)
+    blade_object = blade.blade_hull(downsample_z=10)
     fp = FloatingPlatform(args.input)
     tower = Tower(args.input)
     rna = RNA(args.input)
