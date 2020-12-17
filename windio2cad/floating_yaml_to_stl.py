@@ -216,7 +216,12 @@ class RNA:
         if blade_object is None:
             union = solid.union()((hub, cube))
         else:
-            union = solid.union()((hub, cube, blade_object))
+            blade_1 = solid.rotate((0.0, 0.0, 0.0))(blade_object)
+            blade_2 = solid.rotate((120.0, 0.0, 0.0))(blade_object)
+            blade_3 = solid.rotate((-120.0, 0.0, 0.0))(blade_object)
+            rotor = solid.union()((blade_1, blade_2, blade_3))
+            translate_rotor = solid.translate((hub_center_x, hub_center_y, 0.0))(rotor)
+            union = solid.union()((hub, cube, translate_rotor))
         rna = solid.translate((0.0, 0.0, nacelle_z_height))(union)
         return rna
 
@@ -457,7 +462,7 @@ if __name__ == "__main__":
     print("Parsing .yaml ...")
 
     blade = Blade(args.input)
-    blade_object = blade.blade_hull(downsample_z=10)
+    blade_object = blade.blade_hull(downsample_z=20)
     fp = FloatingPlatform(args.input)
     tower = Tower(args.input)
     rna = RNA(args.input)
@@ -468,7 +473,6 @@ if __name__ == "__main__":
             [fp.members_union(), tower.tower_union(), rna.rna_union(blade_object)]
         )
         f.write(solid.scad_render(big_union))
-        # f.write(solid.scad_render(blade.blade_hull(downsample_z=10)))
 
     print("Creating .stl ...")
     subprocess.run([args.openscad, "-o", args.output, intermediate_openscad])
