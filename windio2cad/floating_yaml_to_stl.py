@@ -197,7 +197,7 @@ class RNA:
         self.tower_dict = geometry["components"]["tower"]
         self.hub_dict = geometry["components"]["hub"]
 
-    def rna_union(self) -> solid.OpenSCADObject:
+    def rna_union(self, blade_object: solid.OpenSCADObject = None) -> solid.OpenSCADObject:
         tower_height = self.tower_dict["outer_shape_bem"]["reference_axis"]["z"]["values"][-1]
         nacelle_length = 2.0 * self.nacelle_dict["drivetrain"]["overhang"]
         nacelle_height = 2.2 * self.nacelle_dict["drivetrain"]["distance_tt_hub"]
@@ -211,10 +211,13 @@ class RNA:
         hub_center_y = 0.0
         hub_center_x = self.nacelle_dict["drivetrain"]["overhang"]
         hub_radius = self.hub_dict["diameter"] / 2.0
-        hub = solid.translate([hub_center_x, hub_center_y, 0.0])(solid.sphere(hub_radius))
+        hub = solid.translate((hub_center_x, hub_center_y, 0.0))(solid.sphere(hub_radius))
 
-        union = solid.union()([hub, cube])
-        rna = solid.translate([0.0, 0.0, nacelle_z_height])(union)
+        if blade_object is None:
+            union = solid.union()((hub, cube))
+        else:
+            union = solid.union()((hub, cube, blade_object))
+        rna = solid.translate((0.0, 0.0, nacelle_z_height))(union)
         return rna
 
 
@@ -409,7 +412,7 @@ class FloatingPlatform:
             translation = solid.translate(bottom)(cylinder)
             member_shapes.append(translation)
 
-        member_union = solid.union()(tuple(member_shapes))
+        member_union = solid.union()(member_shapes)
 
         if direction[0] == 0 and direction[1] == 0:
             return solid.translate((joint1[0], joint1[1], min(joint1[2], joint2[2])))(
@@ -454,17 +457,18 @@ if __name__ == "__main__":
     print("Parsing .yaml ...")
 
     blade = Blade(args.input)
-    # fp = FloatingPlatform(args.input)
-    # tower = Tower(args.input)
-    # rna = RNA(args.input)
+    blade_object = blade.blade_hull(downsample_z=10)
+    fp = FloatingPlatform(args.input)
+    tower = Tower(args.input)
+    rna = RNA(args.input)
 
     with open(intermediate_openscad, "w") as f:
         f.write("$fn = 25;\n")
-        # big_union = solid.union()(
-        #     [fp.members_union(), tower.tower_union(), rna.rna_union()]
-        # )
-        # f.write(solid.scad_render(big_union))
-        f.write(solid.scad_render(blade.blade_hull(downsample_z=10)))
+        big_union = solid.union()(
+            [fp.members_union(), tower.tower_union(), rna.rna_union(blade_object)]
+        )
+        f.write(solid.scad_render(big_union))
+        # f.write(solid.scad_render(blade.blade_hull(downsample_z=10)))
 
     print("Creating .stl ...")
     subprocess.run([args.openscad, "-o", args.output, intermediate_openscad])
