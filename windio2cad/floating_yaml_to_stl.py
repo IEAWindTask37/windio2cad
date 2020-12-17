@@ -9,7 +9,19 @@ from math import sin, cos
 
 
 class Tower:
+    """
+    This class generates OpenSCAD code for a tower in a YAML file.
+    """
+
     def __init__(self, yaml_filename: str):
+        """
+        This initializes the tower create code.
+
+        Parameters
+        ----------
+        yaml_filename: str
+            The name of the YAML file containing the geometry specification
+        """
         self.yaml_filename = yaml_filename
         geometry = yaml.load(open(self.yaml_filename, "r"), yaml.FullLoader)
         self.height = geometry["components"]["tower"]["outer_shape_bem"]["reference_axis"]["z"]["values"][-1]
@@ -17,6 +29,14 @@ class Tower:
         self.values = geometry["components"]["tower"]["outer_shape_bem"]["outer_diameter"]["values"]
 
     def tower_union(self) -> solid.OpenSCADObject:
+        """
+        This method creates the union of cylinders for a tower.
+
+        Returns
+        -------
+        solid.OpenSCADObject
+            The union of all the tower sections.
+        """
         sections = []
         for i in range(1, len(self.grid)):
             bottom = self.grid[i - 1] * self.height
@@ -32,8 +52,8 @@ class Tower:
 
 class FloatingPlatform:
     """
-    This class generates OpenSCAD code for an arbitrary set of members and
-    joints in an ontology YAML file.
+    This class generates OpenSCAD code for an arbitrary set of floating
+    members and joints in an ontology file.
     """
 
     def __init__(self, yaml_filename: str):
@@ -219,7 +239,7 @@ if __name__ == "__main__":
 
     with open(intermediate_openscad, "w") as f:
         f.write("$fn = 25;\n")
-        big_union = (solid.union()([fp.members_union(), tower.tower_union()]))
+        big_union = solid.union()([fp.members_union(), tower.tower_union()])
         f.write(solid.scad_render(big_union))
 
     print("Creating .stl ...")
