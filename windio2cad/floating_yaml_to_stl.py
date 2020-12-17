@@ -73,13 +73,19 @@ class Blade:
 
         # Read in blade spanwise geometry values and put on common grid
         chord = self.myinterp(
-            r_span, self.outer_shape["chord"]["grid"], self.outer_shape["chord"]["values"]
+            r_span,
+            self.outer_shape["chord"]["grid"],
+            self.outer_shape["chord"]["values"],
         )
         twist = self.myinterp(
-            r_span, self.outer_shape["twist"]["grid"], self.outer_shape["twist"]["values"]
+            r_span,
+            self.outer_shape["twist"]["grid"],
+            self.outer_shape["twist"]["values"],
         )
         pitch_axis = self.myinterp(
-            r_span, self.outer_shape["pitch_axis"]["grid"], self.outer_shape["pitch_axis"]["values"]
+            r_span,
+            self.outer_shape["pitch_axis"]["grid"],
+            self.outer_shape["pitch_axis"]["values"],
         )
         ref_axis = np.c_[
             self.myinterp(
@@ -113,7 +119,10 @@ class Blade:
         # Create common airfoil coordinates grid
         coord_xy = np.zeros((n_af, n_xy, 2))
         for i in range(n_af):
-            points = np.c_[self.airfoils[i]["coordinates"]["x"], self.airfoils[i]["coordinates"]["y"]]
+            points = np.c_[
+                self.airfoils[i]["coordinates"]["x"],
+                self.airfoils[i]["coordinates"]["y"],
+            ]
 
             # Check that airfoil points are declared from the TE suction side to TE pressure side
             idx_le = np.argmin(points[:, 0])
@@ -150,7 +159,9 @@ class Blade:
         # Spanwise interpolation of the profile coordinates with a pchip
         r_thick_unique, indices = np.unique(r_thick_used, return_index=True)
         coord_xy_interp = np.flip(
-            self.myinterp(np.flip(r_thick_interp), r_thick_unique, coord_xy_used[indices, :, :]),
+            self.myinterp(
+                np.flip(r_thick_interp), r_thick_unique, coord_xy_used[indices, :, :]
+            ),
             axis=0,
         )
         for i in range(n_span):
@@ -184,8 +195,12 @@ class Blade:
         for i in range(n_span):
             for j in range(n_xy):
                 lofted_shape[i, j, :] = (
-                        np.r_[coord_xy_dim_twisted[i, j, 1], coord_xy_dim_twisted[i, j, 0], 0.0]
-                        + ref_axis[i, :]
+                    np.r_[
+                        coord_xy_dim_twisted[i, j, 1],
+                        coord_xy_dim_twisted[i, j, 0],
+                        0.0,
+                    ]
+                    + ref_axis[i, :]
                 )
 
         return lofted_shape
@@ -266,7 +281,9 @@ class RNA:
         self.tower_dict = geometry["components"]["tower"]
         self.hub_dict = geometry["components"]["hub"]
 
-    def rna_union(self, blade_object: Optional[solid.OpenSCADObject] = None) -> solid.OpenSCADObject:
+    def rna_union(
+        self, blade_object: Optional[solid.OpenSCADObject] = None
+    ) -> solid.OpenSCADObject:
         """
         This creates a union of the components of the RNA. In this method,
         the hub and nacelle are created. Optionally, a single blade can
@@ -286,7 +303,9 @@ class RNA:
         """
 
         # Get tower height and nacelle dimensions.
-        tower_height = self.tower_dict["outer_shape_bem"]["reference_axis"]["z"]["values"][-1]
+        tower_height = self.tower_dict["outer_shape_bem"]["reference_axis"]["z"][
+            "values"
+        ][-1]
         nacelle_length = 2.0 * self.nacelle_dict["drivetrain"]["overhang"]
         nacelle_height = 2.2 * self.nacelle_dict["drivetrain"]["distance_tt_hub"]
         nacelle_width = nacelle_height
@@ -301,7 +320,9 @@ class RNA:
         hub_center_y = 0.0
         hub_center_x = self.nacelle_dict["drivetrain"]["overhang"]
         hub_radius = self.hub_dict["diameter"] / 2.0
-        hub = solid.translate((hub_center_x, hub_center_y, 0.0))(solid.sphere(hub_radius))
+        hub = solid.translate((hub_center_x, hub_center_y, 0.0))(
+            solid.sphere(hub_radius)
+        )
 
         # If blades are present, create a rotor; otherwise just return the
         # hub attached to the nacelle
@@ -539,6 +560,8 @@ class FloatingPlatform:
 
 
 if __name__ == "__main__":
+
+    # Create a command line parser
     parser = argparse.ArgumentParser(
         description="Translate a yaml definition of a semisubmersible platform into an OpenSCAD source file."
     )
@@ -549,18 +572,20 @@ if __name__ == "__main__":
         required=True,
     )
     parser.add_argument("--openscad", help="Path to OpenSCAD executable", required=True)
+    parser.add_argument("--downsample", default=1, type=int, help="Defaults to 1, meaning every cross section is rendered.")
     args = parser.parse_args()
 
     intermediate_openscad = "intermediate.scad"
 
     print(f"Input yaml: {args.input}")
     print(f"Output .stl: {args.output}")
+    print(f"Blade downsampling: {args.downsample}")
     print(f"Intermediate OpenSCAD: {intermediate_openscad}")
     print(f"Path to OpenSCAD: {args.openscad}")
     print("Parsing .yaml ...")
 
     blade = Blade(args.input)
-    blade_object = blade.blade_hull(downsample_z=10)
+    blade_object = blade.blade_hull(downsample_z=args.downsample)
     fp = FloatingPlatform(args.input)
     tower = Tower(args.input)
     rna = RNA(args.input)
