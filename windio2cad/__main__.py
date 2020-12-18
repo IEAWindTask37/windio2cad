@@ -315,8 +315,8 @@ class RNA:
 
         # The hub is a sphere
         hub_center_y = 0.0
-        hub_center_x = 1.5 * self.nacelle_dict["drivetrain"]["overhang"]
-        hub_radius = self.hub_dict["diameter"]
+        hub_center_x = self.nacelle_dict["drivetrain"]["overhang"]
+        hub_radius = self.hub_dict["diameter"] / 2.0
         hub = solid.translate((hub_center_x, hub_center_y, 0.0))(
             solid.sphere(hub_radius)
         )
