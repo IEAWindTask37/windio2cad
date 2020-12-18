@@ -551,7 +551,18 @@ if __name__ == "__main__":
         required=True,
     )
     parser.add_argument("--openscad", help="Path to OpenSCAD executable", required=True)
-    parser.add_argument("--downsample", default=1, type=int, help="Defaults to 1, meaning every cross section is rendered.")
+    parser.add_argument("--downsample",
+                        default=1,
+                        type=int,
+                        help="Defaults to 1, meaning every cross section is rendered."
+    )
+    parser.add_argument(
+        "--blade",
+        default=None,
+        nargs="?",
+        const="blade"
+    )
+
     args = parser.parse_args()
 
     intermediate_openscad = "intermediate.scad"
@@ -561,20 +572,30 @@ if __name__ == "__main__":
     print(f"Blade downsampling: {args.downsample}")
     print(f"Intermediate OpenSCAD: {intermediate_openscad}")
     print(f"Path to OpenSCAD: {args.openscad}")
+    if args.blade == "blade":
+        print("Rendering blade only...")
+    else:
+        print("Rendering everything...")
     print("Parsing .yaml ...")
 
-    blade = Blade(args.input)
-    blade_object = blade.blade_hull(downsample_z=args.downsample)
-    fp = FloatingPlatform(args.input)
-    tower = Tower(args.input)
-    rna = RNA(args.input)
-
-    with open(intermediate_openscad, "w") as f:
-        f.write("$fn = 25;\n")
-        big_union = solid.union()(
-            [fp.members_union(), tower.tower_union(), rna.rna_union(blade_object)]
-        )
-        f.write(solid.scad_render(big_union))
+    if args.blade == "blade":
+        blade = Blade(args.input)
+        blade_object = blade.blade_hull(downsample_z=args.downsample)
+        with open(intermediate_openscad, "w") as f:
+            f.write("$fn = 25;\n")
+            f.write(solid.scad_render(blade_object))
+    else:
+        blade = Blade(args.input)
+        blade_object = blade.blade_hull(downsample_z=args.downsample)
+        fp = FloatingPlatform(args.input)
+        tower = Tower(args.input)
+        rna = RNA(args.input)
+        with open(intermediate_openscad, "w") as f:
+            f.write("$fn = 25;\n")
+            big_union = solid.union()(
+                [fp.members_union(), tower.tower_union(), rna.rna_union(blade_object)]
+            )
+            f.write(solid.scad_render(big_union))
 
     print("Creating .stl ...")
     subprocess.run([args.openscad, "-o", args.output, intermediate_openscad])

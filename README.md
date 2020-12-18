@@ -14,9 +14,11 @@ Read below to learn more about rendering these `.yaml` files into `.stl` files.
 
 ## Installation
 
-Clone the repository and change into the repository's directory:
+This instllation guide assumes you are using `conda` for management of virtual environments. Clone the repository and change into the repository's directory:
 
-``` 
+```
+conda create -n windio2cad python=3.8
+conda activate windio2cad
 pip install -e .
 ```
 
@@ -24,8 +26,14 @@ This module depends on the OpenSCAD package to be installed to render the final 
 
 ## Usage
 
-On a macOS system with OpenSCAD installed in its default location, use the following command to create an `.stl` file for a turbine atop a semisubmersible foundation:
+Use the following command to create an `.stl` file for a turbine atop a semisubmersible foundation:
 
 ```
-python -m windio2cad --input nrel5mw-spar_oc3.yaml --output turbine.stl --openscad /Applications/OpenSCAD.app/Contents/MacOS/OpenSCAD
+python -m windio2cad --input nrel5mw-semi_oc4.yaml --output turbine.stl --openscad [PATH TO OPENSCAD]
 ```
+
+Replace `[PATH TO OPENSCAD]` with the path to OpenSCAD on your operating system.
+
+### Rendering just the blade
+
+In some applications, only a rendering of the blade is needed. In those cases, simply add the `--blade` option to the command line to render just the blade.
