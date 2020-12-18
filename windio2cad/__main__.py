@@ -303,8 +303,8 @@ class RNA:
         tower_height = self.tower_dict["outer_shape_bem"]["reference_axis"]["z"][
             "values"
         ][-1]
-        nacelle_length = 2.0 * self.nacelle_dict["drivetrain"]["overhang"]
-        nacelle_height = 2.2 * self.nacelle_dict["drivetrain"]["distance_tt_hub"]
+        nacelle_length = self.nacelle_dict["drivetrain"]["overhang"]
+        nacelle_height = self.nacelle_dict["drivetrain"]["distance_tt_hub"]
         nacelle_width = nacelle_height
         nacelle_z_height = 0.5 * nacelle_height + tower_height
 
