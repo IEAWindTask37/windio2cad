@@ -413,34 +413,10 @@ class FloatingPlatform:
             The absolute path to the ontology YAML file as a string.
         """
         self.yaml_filename = yaml_filename
-        self.floating_platform_dict = None
-        self.joints_dict = None
+        geometry = yaml.load(open(self.yaml_filename, "r"), yaml.FullLoader)
+        self.floating_platform = geometry["components"]["floating_platform"]
 
-    @property
-    def floating_platform(self) -> Dict[str, Any]:
-        """
-        Reads the floating platform portion of the YAML ontology and
-        returns it as a dictionary.
-
-        This method uses memoization to cache the results of reading the
-        floating platform. For the first time the floating platform is
-        read, self.floating_platform_dict is None, and the file is read
-        and parsed as YAML. This parsed result is stored in
-        self.floating_platform_dict. Subsequent calls return this cached
-        value without reading and parsing the YAML again.
-
-        Returns
-        -------
-        Dict[str, Any]
-            The dictionary that describes the floating platform.
-        """
-        if self.floating_platform_dict is None:
-            geometry = yaml.load(open(self.yaml_filename, "r"), yaml.FullLoader)
-            self.floating_platform_dict = geometry["components"]["floating_platform"]
-        return self.floating_platform_dict
-
-    @property
-    def joints(self) -> Dict[str, np.array]:
+    def joints(self):
         """
         Converts all normal and axial joints into cartesian coordinates.
 
@@ -453,28 +429,27 @@ class FloatingPlatform:
         Dict[str, np.array]
             The names of joints mapped to their cartesian coordinates
         """
-        if self.joints_dict is None:
-            self.joints_dict = {}
-            for member in self.floating_platform["joints"]:
-                if "cylindrical" in member and member["cylindrical"]:
-                    r = member["location"][0]
-                    theta = member["location"][1]
-                    x = r * cos(theta)
-                    y = r * sin(theta)
-                    z = member["location"][2]
-                    self.joints_dict[member["name"]] = np.array([x, y, z])
-                else:
-                    self.joints_dict[member["name"]] = np.array(member["location"])
-            for member in self.floating_platform["members"]:
-                joint1 = self.joints_dict[member["joint1"]]
-                joint2 = self.joints_dict[member["joint2"]]
-                direction = joint2 - joint1
-                if "axial_joints" in member:
-                    for axial_joint in member["axial_joints"]:
-                        grid = axial_joint["grid"]
-                        axial_cartesian = joint1 + direction * grid
-                        self.joints_dict[axial_joint["name"]] = axial_cartesian
-        return self.joints_dict
+        joints_dict = {}
+        for member in self.floating_platform["joints"]:
+            if "cylindrical" in member and member["cylindrical"]:
+                r = member["location"][0]
+                theta = member["location"][1]
+                x = r * cos(theta)
+                y = r * sin(theta)
+                z = member["location"][2]
+                joints_dict[member["name"]] = np.array([x, y, z])
+            else:
+                joints_dict[member["name"]] = np.array(member["location"])
+        for member in self.floating_platform["members"]:
+            joint1 = joints_dict[member["joint1"]]
+            joint2 = joints_dict[member["joint2"]]
+            direction = joint2 - joint1
+            if "axial_joints" in member:
+                for axial_joint in member["axial_joints"]:
+                    grid = axial_joint["grid"]
+                    axial_cartesian = joint1 + direction * grid
+                    joints_dict[axial_joint["name"]] = axial_cartesian
+        return joints_dict
 
     def members_union(self) -> solid.OpenSCADObject:
         """
@@ -486,9 +461,10 @@ class FloatingPlatform:
             Returns and OpenSCAD object that is the union of all members.
         """
         members = []
+        joints_dict = self.joints()
         for member in self.floating_platform["members"]:
-            joint1 = self.joints[member["joint1"]]
-            joint2 = self.joints[member["joint2"]]
+            joint1 = joints_dict[member["joint1"]]
+            joint2 = joints_dict[member["joint2"]]
             grid = member["outer_shape"]["outer_diameter"]["grid"]
             values = member["outer_shape"]["outer_diameter"]["values"]
             members.append(self.member(joint1, joint2, grid, values))
