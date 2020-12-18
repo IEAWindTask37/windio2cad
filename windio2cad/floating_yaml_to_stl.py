@@ -318,8 +318,8 @@ class RNA:
 
         # The hub is a sphere
         hub_center_y = 0.0
-        hub_center_x = self.nacelle_dict["drivetrain"]["overhang"]
-        hub_radius = self.hub_dict["diameter"] / 2.0
+        hub_center_x = 1.5 * self.nacelle_dict["drivetrain"]["overhang"]
+        hub_radius = self.hub_dict["diameter"]
         hub = solid.translate((hub_center_x, hub_center_y, 0.0))(
             solid.sphere(hub_radius)
         )
@@ -330,10 +330,16 @@ class RNA:
         if blade_object is None:
             union = solid.union()((hub, cube))
         else:
-            blade_1 = solid.rotate((0.0, 0.0, 0.0))(blade_object)
-            blade_2 = solid.rotate((120.0, 0.0, 0.0))(blade_object)
-            blade_3 = solid.rotate((-120.0, 0.0, 0.0))(blade_object)
-            rotor = solid.union()((blade_1, blade_2, blade_3))
+            translated_blades = [
+                solid.translate((0.0, 0.0, hub_radius))(blade_object)
+                for _ in range(3)
+            ]
+
+            rotor = solid.union()([
+                solid.rotate((theta, 0.0, 0.0))(blade)
+                for blade, theta in zip(translated_blades,[0.0, 120.0, -120.0])
+            ])
+
             translate_rotor = solid.translate((hub_center_x, hub_center_y, 0.0))(rotor)
             union = solid.union()((hub, cube, translate_rotor))
         rna = solid.translate((0.0, 0.0, nacelle_z_height))(union)
