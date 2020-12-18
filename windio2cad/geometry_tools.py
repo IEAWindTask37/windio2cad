@@ -2,7 +2,7 @@ import numpy as np
 from scipy.optimize import minimize
 from scipy.interpolate import PchipInterpolator
 from scipy.linalg import solve_banded
-from distfunc import distfunc
+from windio2cad.distfunc import distfunc
 
 def _checkIfFloat(x):
     try:

@@ -3,7 +3,7 @@ import argparse
 import yaml
 import numpy as np
 from scipy.interpolate import PchipInterpolator as spline
-import geometry_tools as geom
+import windio2cad.geometry_tools as geom
 import solid
 import subprocess
 from numpy.linalg import norm
