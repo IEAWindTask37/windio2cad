@@ -14,9 +14,11 @@ Read below to learn more about rendering these `.yaml` files into `.stl` files.
 
 ## Installation
 
-Clone the repository and change into the repository's directory:
+This instllation guide assumes you are using `conda` for management of virtual environments. Clone the repository and change into the repository's directory:
 
-``` 
+```
+conda create -n windio2cad python=3.8
+conda activate windio2cad
 pip install -e .
 ```
 
