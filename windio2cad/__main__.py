@@ -10,9 +10,6 @@ from numpy.linalg import norm
 from math import sin, cos
 
 
-# TODO: Attempt to use ruamel
-
-
 class Blade:
     """
     This class renders one blade for the rotor.
