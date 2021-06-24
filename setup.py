@@ -16,6 +16,8 @@ setup(
         'scipy',
         'matplotlib',
         'numpy',
+        'ruamel.yaml',
+        'solidpython',
     ],
     python_requires  = '>=3.8',
     packages         = find_packages(exclude=['docs', 'tests', 'ext']),
