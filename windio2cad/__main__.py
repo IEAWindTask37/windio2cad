@@ -303,8 +303,8 @@ class RNA:
         tower_height = self.tower_dict["outer_shape_bem"]["reference_axis"]["z"][
             "values"
         ][-1]
-        nacelle_length = 2.0 * self.nacelle_dict["drivetrain"]["overhang"]
-        nacelle_height = 2.2 * self.nacelle_dict["drivetrain"]["distance_tt_hub"]
+        nacelle_length = self.nacelle_dict["drivetrain"]["overhang"]
+        nacelle_height = self.nacelle_dict["drivetrain"]["distance_tt_hub"]
         nacelle_width = nacelle_height
         nacelle_z_height = 0.5 * nacelle_height + tower_height
 
@@ -315,8 +315,8 @@ class RNA:
 
         # The hub is a sphere
         hub_center_y = 0.0
-        hub_center_x = 1.5 * self.nacelle_dict["drivetrain"]["overhang"]
-        hub_radius = self.hub_dict["diameter"]
+        hub_center_x = self.nacelle_dict["drivetrain"]["overhang"]
+        hub_radius = self.hub_dict["diameter"] / 2.0
         hub = solid.translate((hub_center_x, hub_center_y, 0.0))(
             solid.sphere(hub_radius)
         )
@@ -348,7 +348,7 @@ class Tower:
     This class generates OpenSCAD code for a tower specified in a YAML file.
     """
 
-    def __init__(self, yaml_filename: str):
+    def __init__(self, yaml_filename: str, towerkey="tower"):
         """
         This reads the tower YAML file and extracts the data needed
         for the geometry of the tower into instance attributes.
@@ -363,15 +363,18 @@ class Tower:
             The name of the YAML file containing the geometry specification
         """
         geometry = yaml.load(open(yaml_filename, "r"), yaml.FullLoader)
-        self.height = geometry["components"]["tower"]["outer_shape_bem"][
-            "reference_axis"
-        ]["z"]["values"][-1]
-        self.grid = geometry["components"]["tower"]["outer_shape_bem"][
-            "outer_diameter"
-        ]["grid"]
-        self.values = geometry["components"]["tower"]["outer_shape_bem"][
-            "outer_diameter"
-        ]["values"]
+        if towerkey in geometry["components"]:
+            self.height = geometry["components"][towerkey]["outer_shape_bem"][
+                "reference_axis"
+            ]["z"]["values"][-1]
+            self.grid = geometry["components"][towerkey]["outer_shape_bem"][
+                "outer_diameter"
+            ]["grid"]
+            self.values = geometry["components"][towerkey]["outer_shape_bem"][
+                "outer_diameter"
+            ]["values"]
+        else:
+            self.height = self.grid = self.values = None
 
     def tower_union(self) -> solid.OpenSCADObject:
         """
@@ -382,6 +385,7 @@ class Tower:
         solid.OpenSCADObject
             The union of all the tower sections.
         """
+        if self.height is None: return []
         sections = []
         for i in range(1, len(self.grid)):
             bottom = self.grid[i - 1] * self.height
@@ -417,8 +421,11 @@ class FloatingPlatform:
         """
         self.yaml_filename = yaml_filename
         geometry = yaml.load(open(self.yaml_filename, "r"), yaml.FullLoader)
-        self.floating_platform = geometry["components"]["floating_platform"]
-
+        if "floating_platform" in geometry["components"]:
+            self.floating_platform = geometry["components"]["floating_platform"]
+        else:
+            self.floating_platform = None
+        
     def joints(self):
         """
         Converts all normal and axial joints into cartesian coordinates.
@@ -432,6 +439,7 @@ class FloatingPlatform:
         Dict[str, np.array]
             The names of joints mapped to their cartesian coordinates
         """
+        if self.floating_platform is None: return {}
         joints_dict = {}
         for member in self.floating_platform["joints"]:
             if "cylindrical" in member and member["cylindrical"]:
@@ -463,6 +471,7 @@ class FloatingPlatform:
         solid.OpenSCADObject
             Returns and OpenSCAD object that is the union of all members.
         """
+        if self.floating_platform is None: return []
         members = []
         joints_dict = self.joints()
         for member in self.floating_platform["members"]:
@@ -563,6 +572,27 @@ if __name__ == "__main__":
         const="blade"
     )
 
+    parser.add_argument(
+        "--tower",
+        default=None,
+        nargs="?",
+        const="tower"
+    )
+
+    parser.add_argument(
+        "--monopile",
+        default=None,
+        nargs="?",
+        const="monopile"
+    )
+
+    parser.add_argument(
+        "--floater",
+        default=None,
+        nargs="?",
+        const="floater"
+    )
+
     args = parser.parse_args()
 
     intermediate_openscad = "intermediate.scad"
@@ -572,31 +602,61 @@ if __name__ == "__main__":
     print(f"Blade downsampling: {args.downsample}")
     print(f"Intermediate OpenSCAD: {intermediate_openscad}")
     print(f"Path to OpenSCAD: {args.openscad}")
-    if args.blade == "blade":
-        print("Rendering blade only...")
-    else:
-        print("Rendering everything...")
     print("Parsing .yaml ...")
 
     if args.blade == "blade":
+        print("Rendering blade only...")
         blade = Blade(args.input)
         blade_object = blade.blade_hull(downsample_z=args.downsample)
         with open(intermediate_openscad, "w") as f:
             f.write("$fn = 25;\n")
             f.write(solid.scad_render(blade_object))
+            
+    elif args.tower == "tower":
+        print("Rendering tower only...")
+        tower = Tower(args.input)
+        with open(intermediate_openscad, "w") as f:
+            f.write("$fn = 25;\n")
+            big_union = solid.union()(
+                [tower.tower_union()]
+            )
+            f.write(solid.scad_render(big_union))
+            
+    elif args.monopile == "monopile":
+        print("Rendering monopile only...")
+        monopile = Tower(args.input, towerkey="monopile")
+        with open(intermediate_openscad, "w") as f:
+            f.write("$fn = 25;\n")
+            big_union = solid.union()(
+                [monopile.tower_union()]
+            )
+            f.write(solid.scad_render(big_union))
+            
+    elif args.floater == "floater":
+        print("Rendering floater only...")
+        fp = FloatingPlatform(args.input)
+        with open(intermediate_openscad, "w") as f:
+            f.write("$fn = 25;\n")
+            big_union = solid.union()(
+                [fp.members_union()]
+            )
+            f.write(solid.scad_render(big_union))
+
     else:
+        print("Rendering everything...")
         blade = Blade(args.input)
         blade_object = blade.blade_hull(downsample_z=args.downsample)
         fp = FloatingPlatform(args.input)
         tower = Tower(args.input)
+        monopile = Tower(args.input, towerkey="monopile")
         rna = RNA(args.input)
         with open(intermediate_openscad, "w") as f:
             f.write("$fn = 25;\n")
             big_union = solid.union()(
-                [fp.members_union(), tower.tower_union(), rna.rna_union(blade_object)]
+                [fp.members_union(), tower.tower_union(), monopile.tower_union(), rna.rna_union(blade_object)]
             )
             f.write(solid.scad_render(big_union))
-
+            
     print("Creating .stl ...")
     subprocess.run([args.openscad, "-o", args.output, intermediate_openscad])
     print("Done!")

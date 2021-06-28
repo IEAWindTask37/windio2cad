@@ -34,6 +34,6 @@ python -m windio2cad --input nrel5mw-semi_oc4.yaml --output turbine.stl --opensc
 
 Replace `[PATH TO OPENSCAD]` with the path to OpenSCAD on your operating system.
 
-### Rendering just the blade
+### Rendering just the blade, tower, monopile, or floating platform
 
-In some applications, only a rendering of the blade is needed. In those cases, simply add the `--blade` option to the command line to render just the blade.
+In some applications, only a rendering of the blade / tower / monopile / floating platform is needed. In those cases, simply add the `--blade` or `--tower` or `--monopile` or `--floater` option to the command line to render just those components (can only be done one at a time).
